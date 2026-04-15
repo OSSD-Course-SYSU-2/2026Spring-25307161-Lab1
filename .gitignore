@@ -1,0 +1,25 @@
+# IDE缓存与配置
+.idea/
+.hvigor/
+.appanalyzer/
+*.iml
+
+# 构建产物与依赖
+entry/build/
+hvigor/
+oh_modules/
+*.hap
+*.har
+*.hap.sign
+
+# 本地配置与签名
+local.properties
+*.jks
+*.p12
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
