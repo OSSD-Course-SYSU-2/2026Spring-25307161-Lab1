@@ -1,43 +1,44 @@
-/**
- * 任务模型（严格符合 DevEco 6.1.0 规范）
- * 禁用：Partial、对象字面量作为类型
- * 启用：显式字段 + 接口定义
- */
-export interface TaskOptions {
-  id: number;
-  title: string;
-  taskType?: 'daily' | 'word' | 'practice' | 'review';
-  startTime?: string;
-  endTime?: string;
-  duration?: number;
-  isCompleted?: boolean;
-  icon?: string;
-  notes?: string;
+export class TaskParams {
+  id: number = 0;
+  title: string = '';
+  taskType: string = 'daily';
+  startTime: string = '00:00';
+  endTime: string = '00:00';
+  duration: number = 30;
+  isCompleted: boolean = false;
+  notes: string = '';
+  dateStr: string = '';      // 仅当天显示用，空=不按单天控制
+  reminderId: number = -1;
+  startDate: string = '';    // 自定义范围开始日期 YYYY-MM-DD
+  endDate: string = '';      // 自定义范围结束日期 YYYY-MM-DD
 }
 
 export class Task {
-  // 强类型必选字段
-  public id: number;
-  public title: string;
-  public taskType: 'daily' | 'word' | 'practice' | 'review';
-  public startTime: string;
-  public endTime: string;
-  public duration: number;
+  id: number = 0;
+  title: string = '';
+  taskType: string = 'daily';
+  startTime: string = '00:00';
+  endTime: string = '00:00';
+  duration: number = 30;
+  isCompleted: boolean = false;
+  notes: string = '';
+  dateStr: string = '';
+  reminderId: number = -1;
+  startDate: string = '';
+  endDate: string = '';
 
-  // 可选字段
-  public isCompleted: boolean;
-  public icon: string;
-  public notes: string;
-
-  constructor(options: TaskOptions) {
-    this.id = options.id;
-    this.title = options.title;
-    this.taskType = options.taskType ?? 'daily';
-    this.startTime = options.startTime ?? '00:00';
-    this.endTime = options.endTime ?? '00:00';
-    this.duration = options.duration ?? 25;
-    this.isCompleted = options.isCompleted ?? false;
-    this.icon = options.icon ?? '';
-    this.notes = options.notes ?? '';
+  constructor(params: TaskParams) {
+    this.id = params.id;
+    this.title = params.title;
+    this.taskType = params.taskType;
+    this.startTime = params.startTime;
+    this.endTime = params.endTime;
+    this.duration = params.duration;
+    this.isCompleted = params.isCompleted;
+    this.notes = params.notes;
+    this.dateStr = params.dateStr;
+    this.reminderId = params.reminderId;
+    this.startDate = params.startDate;
+    this.endDate = params.endDate;
   }
 }

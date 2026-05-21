@@ -35,6 +35,10 @@
     {
       "name": "todo_list_five",
       "value": "Relax With TV Show"
+    },
+    {
+      "name": "permission_reminder_reason",
+      "value": "任务开始时发送振动和通知提醒"
     }
   ]
 }
