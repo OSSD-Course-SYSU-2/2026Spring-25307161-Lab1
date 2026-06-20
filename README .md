@@ -160,7 +160,43 @@
 
 ## 🔄 自由流转（跨端迁移）
 
-基于 HarmonyOS **分布式流转框架**，用户可一键将当前使用状态从手机迁移到平板（或其他设备），实现无缝接续。
+基于 HarmonyOS **分布式流转框架（Distributed Service Kit）**，目标是让用户一键将当前使用状态从手机迁移到平板（或其他设备），实现无缝接续：在手机上专注计时进行到一半，流转到平板后从同样的进度继续，笔记也不会丢失。
+
+### 设计思路
+
+整体方案分为三层：
+
+**1. 权限与配置声明**
+
+在 `module.json5` 中为 `EntryAbility` 添加 `"continuable": true` 标签，向系统声明该页面支持流转。同时申请 `ohos.permission.DISTRIBUTED_DATASYNC` 这一 user_grant 权限，并按规范填写 `reason` 和 `usedScene`，否则编译期会直接报错（`Configuration Error: reason/usedScene mandatory`）。
+
+**2. 状态的实时采集**
+
+迁移状态不是在触发流转那一刻去"拍快照"，而是让页面在交互过程中持续把关键状态写入 `AppStorage`：
+
+| 写入时机 | 写入内容 |
+|---------|---------|
+| Tab 切换 / 进入详情页 | 当前 Tab 索引、当前页面类型（list/detail）、任务 ID |
+| 专注计时每 5 秒 | 剩余秒数、当前笔记内容（节流写入，避免频繁 I/O） |
+
+这样无论流转在什么时间点被触发，`AppStorage` 里始终保有"最新"的状态快照，`onContinue()` 只需要原样读取并打包，不需要额外做同步等待。
+
+**3. 跨端的状态搬运**
+
+```
+源端（手机）触发流转
+      ↓
+onContinue(wantParam) 把 AppStorage 中的状态写入 wantParam
+      ↓
+对端（平板）onCreate() / onNewWant() 从 want.parameters 取出数据
+      ↓
+写回 AppStorage
+      ↓
+ToDoListPage.aboutToAppear() 读取并恢复 Tab + 自动跳转详情页
+TaskDetailPage.aboutToAppear() 读取并恢复计时秒数 + 笔记内容
+```
+
+恢复完成后立即清空对应的 `AppStorage` 键（置为 -1 / 空字符串），避免下次普通启动时被误恢复。
 
 ### 迁移的状态
 
@@ -168,25 +204,11 @@
 |------|------|
 | 当前 Tab 分类 | 恢复到相同的任务分类 |
 | 当前页面 | 若在详情页，自动跳转到对应任务 |
-| 专注计时进度 | 恢复剩余秒数，误差 ≤5 秒 |
-| 笔记内容 | 恢复正在编辑的笔记 |
-
-### 实现原理
-
-```
-源端（手机）触发流转
-      ↓
-onContinue() 保存状态到 wantParam
-      ↓
-对端（平板）onCreate() / onNewWant() 恢复状态到 AppStorage
-      ↓
-ToDoListPage 恢复 Tab + 自动跳转详情页
-TaskDetailPage 恢复计时进度 + 笔记内容
-```
+| 专注计时进度 | 恢复剩余秒数，误差 ≤5 秒（受节流写入间隔影响） |
+| 笔记内容 | 恢复正在编辑中、尚未保存的笔记 |
 
 ### 配置要求
 
-`module.json5` 中需声明：
 ```json
 "continuable": true,
 "requestPermissions": [
@@ -198,7 +220,19 @@ TaskDetailPage 恢复计时进度 + 笔记内容
 ]
 ```
 
-> 自由流转需要两台设备（或模拟器）同时在线，通过系统流转入口触发，而非重新运行 App。
+### ⚠️ 验证情况说明
+
+自由流转功能的代码逻辑（`onContinue` 状态打包、`onNewWant` 状态恢复、页面侧的读取与清理）已经按照官方文档和课件思路完整实现，并通过了静态编译检查。
+
+但受限于本地开发环境条件（DevEco Studio 模拟器之间的分布式组网、华为账号互信配对等需要真实设备或特定网络环境支持），**目前未能在两台设备（或模拟器）之间完成端到端的实机验证**，即尚未实际触发过一次"手机流转到平板"并观察到状态成功恢复的完整过程。
+
+后续如具备真机测试条件（两台已登录同一华为账号、加入同一局域网的 HarmonyOS 设备），可按以下步骤验证：
+
+1. 两台设备同时安装并运行本应用
+2. 在手机上进入任务详情页并开始专注计时
+3. 下拉手机通知中心或进入多任务界面，找到本应用的流转入口
+4. 选择目标设备（平板），触发流转
+5. 观察平板端是否自动打开应用并恢复到相同的任务详情页、计时进度和笔记内容
 
 ---
 
@@ -398,20 +432,79 @@ A breakpoint system (`display.getDefaultDisplaySync()` + `window.on('windowSizeC
 
 ## 🔄 Free Continuation (Cross-Device Migration)
 
-Users can seamlessly transfer the current session from phone to tablet with one tap, migrating Tab category, current page, focus timer progress (±5s accuracy), and note content.
+Built on HarmonyOS's **Distributed Service Kit**, the goal is to let users transfer the current session from phone to tablet with one tap — if a focus timer is halfway through on the phone, continuing on the tablet picks up from the exact same progress, with notes intact.
+
+### Design Approach
+
+The implementation is organized in three layers:
+
+**1. Permission & configuration declaration**
+
+`EntryAbility` is marked with `"continuable": true` in `module.json5` to declare continuation support. The `ohos.permission.DISTRIBUTED_DATASYNC` permission (a user_grant permission) is requested with proper `reason` and `usedScene` fields — omitting either causes a compile-time `Configuration Error`.
+
+**2. Continuous state capture**
+
+Rather than taking a "snapshot" only at the moment continuation is triggered, the pages continuously write key state into `AppStorage` during normal interaction:
+
+| Write trigger | Data written |
+|---------------|---------------|
+| Tab switch / entering detail page | Current Tab index, current page type (list/detail), task ID |
+| Every 5 seconds during focus timer | Remaining seconds, current note content (throttled to limit I/O) |
+
+This way, `AppStorage` always holds an up-to-date snapshot regardless of when continuation fires — `onContinue()` simply reads and packs it, with no extra synchronization needed.
+
+**3. Cross-device state transfer**
 
 ```
 Source device (phone) triggers continuation
       ↓
-onContinue() packs state into wantParam
+onContinue(wantParam) writes AppStorage state into wantParam
       ↓
-Target device (tablet) onCreate() / onNewWant() restores to AppStorage
+Target device (tablet) onCreate() / onNewWant() reads from want.parameters
       ↓
-ToDoListPage restores Tab + auto-navigates to detail
-TaskDetailPage restores timer seconds + note content
+Writes back to AppStorage
+      ↓
+ToDoListPage.aboutToAppear() restores Tab + auto-navigates to detail
+TaskDetailPage.aboutToAppear() restores timer seconds + note content
 ```
 
-> Free Continuation requires both devices online simultaneously, triggered via the system's continuation entry point — not by relaunching the App.
+Corresponding `AppStorage` keys are cleared immediately after restoration (reset to -1 / empty string) to avoid being mistakenly re-applied on a normal app launch.
+
+### Migrated State
+
+| State | Detail |
+|-------|--------|
+| Current Tab category | Restored to same category |
+| Current page | Auto-navigates to detail page if open |
+| Focus timer progress | Restored with ≤5s accuracy (limited by throttle interval) |
+| Note content | Restores unsaved, in-progress notes |
+
+### Configuration
+
+```json
+"continuable": true,
+"requestPermissions": [
+  {
+    "name": "ohos.permission.DISTRIBUTED_DATASYNC",
+    "reason": "Used to sync task data across devices for free continuation",
+    "usedScene": { "abilities": ["EntryAbility"], "when": "inuse" }
+  }
+]
+```
+
+### ⚠️ Verification Status
+
+The Free Continuation logic — `onContinue()` state packing, `onNewWant()` state restoration, and the page-side read/cleanup logic — has been fully implemented following official HarmonyOS documentation and course materials, and passes static compilation checks.
+
+However, due to local development environment constraints (distributed networking between DevEco Studio emulators and Huawei account trust pairing typically require real devices or specific network setups), **end-to-end verification across two physical devices/emulators has not yet been completed** — meaning a full "phone-to-tablet continuation with confirmed state restoration" cycle has not yet been observed in practice.
+
+Once real-device testing conditions are available (two HarmonyOS devices signed into the same Huawei account on the same local network), verification can proceed as follows:
+
+1. Install and run the app on both devices simultaneously
+2. On the phone, open a task detail page and start the focus timer
+3. Pull down the phone's notification center or open the multitasking view to find the app's continuation entry point
+4. Select the target device (tablet) to trigger continuation
+5. Verify the tablet automatically opens the app and restores the same detail page, timer progress, and note content
 
 ---
 
