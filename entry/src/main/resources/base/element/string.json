@@ -37,8 +37,8 @@
       "value": "Relax With TV Show"
     },
     {
-      "name": "permission_reminder_reason",
-      "value": "任务开始时发送振动和通知提醒"
+      "name": "distributed_datasync_reason",
+      "value": "用于在多设备间同步任务数据，实现自由流转"
     }
   ]
 }

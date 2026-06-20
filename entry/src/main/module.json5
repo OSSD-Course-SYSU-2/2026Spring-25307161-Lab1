@@ -2,38 +2,47 @@
   "module": {
     "name": "entry",
     "type": "entry",
-    "description": "$string:module_desc",
+    "description": "智学日程",
     "mainElement": "EntryAbility",
     "deviceTypes": [
-      "phone"
+      "phone",
+      "tablet",
+      "2in1",
+      "wearable"
     ],
     "deliveryWithInstall": true,
     "installationFree": false,
     "pages": "$profile:main_pages",
     "requestPermissions": [
       {
-        "name": "ohos.permission.PUBLISH_AGENT_REMINDER",
-        "reason": "$string:permission_reminder_reason",
-        "usedScene": {
-          "abilities": ["EntryAbility"],
-          "when": "inuse"
-        }
+        "name": "ohos.permission.PUBLISH_AGENT_REMINDER"
       },
       {
         "name": "ohos.permission.VIBRATE"
+      },
+      {
+        "name": "ohos.permission.DISTRIBUTED_DATASYNC",
+        "reason": "$string:distributed_datasync_reason",
+        "usedScene": {
+          "abilities": [
+            "EntryAbility"
+          ],
+          "when": "inuse"
+        }
       }
     ],
     "abilities": [
       {
         "name": "EntryAbility",
         "srcEntry": "./ets/entryability/EntryAbility.ets",
-        "description": "$string:EntryAbility_desc",
+        "description": "EntryAbility",
         "icon": "$media:ic_icon",
         "label": "$string:EntryAbility_label",
         "startWindowIcon": "$media:ic_icon",
         "startWindowBackground": "$color:start_window_background",
         "orientation": "portrait",
         "exported": true,
+        "continuable": true,
         "skills": [
           {
             "entities": [

@@ -1,6 +1,14 @@
 import router from '@ohos.router';
 import { Task } from '../entryability/Task';
 import reminderAgentManager from '@ohos.reminderAgentManager';
+import {
+  CONTINUE_SECONDS,
+  CONTINUE_NOTES,
+  CONTINUE_PAGE,
+  CONTINUE_TASK_ID
+} from '../entryability/EntryAbility';
+import mediaquery from '@ohos.mediaquery';
+import display from '@ohos.display';
 
 function genId(): number {
   return new Date().getTime();
@@ -68,6 +76,14 @@ struct TaskDetailPage {
   @State reminderHour: number = 9;
   @State reminderMinute: number = 0;
 
+  // 断点（同 ToDoListPage，在 aboutToAppear 里动态创建）
+  @State currentBp: string = 'sm';
+  private bpListenerLg: mediaquery.MediaQueryListener | null = null;
+
+  // 流转恢复
+  @StorageProp(CONTINUE_SECONDS) continueSeconds: number = -1;
+  @StorageProp(CONTINUE_NOTES)   continueNotes: string = '';
+
   private timer: number = -1;
   private currentReminderId: number = -1;
 
@@ -77,6 +93,26 @@ struct TaskDetailPage {
   }
 
   aboutToAppear(): void {
+    // 用窗口像素宽度直接计算 vp 判断断点
+    try {
+      const dm = display.getDefaultDisplaySync();
+      const widthVp = dm.width / dm.densityPixels;
+      if (widthVp >= 840) {
+        this.currentBp = 'lg';
+      } else if (widthVp < 200) {
+        this.currentBp = 'xs';
+      } else {
+        this.currentBp = 'sm';
+      }
+    } catch (e) {
+      this.currentBp = 'sm';
+    }
+    // 注册监听处理运行时变化
+    this.bpListenerLg = mediaquery.matchMediaSync('(min-width: 840vp)');
+    this.bpListenerLg.on('change', (r: mediaquery.MediaQueryResult) => {
+      this.currentBp = r.matches ? 'lg' : 'sm';
+    });
+
     try {
       const params = router.getParams();
       if (params) {
@@ -102,15 +138,51 @@ struct TaskDetailPage {
     } catch (e) {
       console.error('aboutToAppear error:', e);
     }
+
+    // ── 流转恢复：用对端保存的计时进度和笔记覆盖 ──────
+    try {
+      if (this.continueSeconds >= 0) {
+        this.seconds = this.continueSeconds;
+        // 清除避免重复恢复
+        AppStorage.SetOrCreate(CONTINUE_SECONDS, -1);
+      }
+      if (this.continueNotes !== '') {
+        if (this.isStudyTask()) {
+          this.studyNotes = this.continueNotes;
+        } else {
+          this.thoughtNotes = this.continueNotes;
+        }
+        AppStorage.SetOrCreate(CONTINUE_NOTES, '');
+      }
+    } catch (e) {
+      console.error('流转恢复error:', e);
+    }
   }
 
-  aboutToDisappear(): void { this.stopTimer(); }
+  aboutToDisappear(): void {
+    this.stopTimer();
+    try {
+      if (this.bpListenerLg) this.bpListenerLg.off('change');
+    } catch (e) {}
+  }
 
   private startTimer(): void {
     this.stopTimer();
     this.timer = setInterval(() => {
-      if (this.seconds > 0) { this.seconds--; }
-      else { this.stopTimer(); this.running = false; this.finished = true; }
+      if (this.seconds > 0) {
+        this.seconds--;
+        // 每5秒实时保存计时进度到流转状态
+        if (this.seconds % 5 === 0) {
+          AppStorage.SetOrCreate(CONTINUE_SECONDS, this.seconds);
+          const currentNotes = this.isStudyTask() ? this.studyNotes : this.thoughtNotes;
+          AppStorage.SetOrCreate(CONTINUE_NOTES, currentNotes);
+        }
+      } else {
+        this.stopTimer();
+        this.running = false;
+        this.finished = true;
+        AppStorage.SetOrCreate(CONTINUE_SECONDS, -1);
+      }
     }, 1000);
   }
 
@@ -158,6 +230,12 @@ struct TaskDetailPage {
   }
 
   private saveAndBack(): void {
+    // 离开详情页时清理流转状态
+    try {
+      AppStorage.SetOrCreate(CONTINUE_SECONDS, -1);
+      AppStorage.SetOrCreate(CONTINUE_NOTES, '');
+      AppStorage.SetOrCreate(CONTINUE_PAGE, 'list');
+    } catch (e) {}
     if (this.task) {
       this.task.title = this.title;
       this.task.notes = this.isStudyTask() ? this.studyNotes : this.thoughtNotes;
@@ -177,8 +255,15 @@ struct TaskDetailPage {
 
   build() {
     Column() {
-      if (this.lockMode) { this.buildLockScreen(); }
-      else { this.buildNormalScreen(); }
+      if (this.lockMode) {
+        this.buildLockScreen();
+      } else if (this.currentBp === 'lg') {
+        // 平板：左右分栏布局
+        this.buildTabletScreen();
+      } else {
+        // 手机/折叠屏：单列滚动
+        this.buildNormalScreen();
+      }
     }
     .width('100%').height('100%');
   }
@@ -539,6 +624,325 @@ struct TaskDetailPage {
       }
       .width('100%').padding({ left: 16, right: 16, top: 12, bottom: 24 })
       .backgroundColor(Color.White);
+    }
+    .width('100%').height('100%').backgroundColor('#f5f7fa');
+  }
+
+  // ══════════════════════════════════════════════
+  // 平板布局：左右分栏
+  // 左栏：任务信息 + 专注计时
+  // 右栏：笔记 + 学习资料 + 闹钟提醒
+  // ══════════════════════════════════════════════
+  @Builder
+  buildTabletScreen() {
+    Column() {
+      // 顶部导航栏
+      Row() {
+        Button({ type: ButtonType.Normal }) {
+          Text('‹ 返回').fontSize(16).fontColor('#ff6b35');
+        }
+        .backgroundColor(Color.Transparent).height(40)
+        .padding({ left: 4, right: 12 })
+        .onClick(() => { try { router.back(); } catch (e) {} });
+
+        Text('任务详情')
+          .fontSize(20).fontWeight(FontWeight.Medium).fontColor('#1a1a1a')
+          .layoutWeight(1).textAlign(TextAlign.Center);
+
+        // 平板右上角直接显示保存按钮
+        Button('保存并返回')
+          .height(36).backgroundColor('#ff6b35')
+          .fontColor(Color.White).fontSize(14).borderRadius(18)
+          .padding({ left: 16, right: 16 })
+          .onClick(() => { this.saveAndBack(); });
+      }
+      .width('100%').height(56)
+      .padding({ left: 8, right: 16 })
+      .backgroundColor(Color.White);
+
+      Divider().strokeWidth(0.5).color('#f0f0f0');
+
+      // 左右分栏主体
+      Row() {
+        // ── 左栏：任务信息 + 专注计时 ──────────────
+        Scroll() {
+          Column({ space: 0 }) {
+            // 任务信息
+            Column({ space: 16 }) {
+              Text('任务标题').fontSize(13).fontColor('#8c8c8c').fontWeight(FontWeight.Medium);
+              TextInput({ text: this.title, placeholder: '输入任务名称' })
+                .height(44).backgroundColor('#f5f7fa').borderRadius(8)
+                .padding({ left: 12, right: 12 }).fontSize(15)
+                .onChange((v: string) => { this.title = v; });
+              if (this.task) {
+                Row({ space: 8 }) {
+                  Text(this.getTaskLabel(this.taskType))
+                    .fontSize(12).fontColor('#096dd9').backgroundColor('#e6f7ff')
+                    .padding({ left: 8, right: 8, top: 3, bottom: 3 }).borderRadius(6);
+                  Text(`${this.task.startTime} ~ ${this.task.endTime}`)
+                    .fontSize(12).fontColor('#595959').backgroundColor('#f5f5f5')
+                    .padding({ left: 8, right: 8, top: 3, bottom: 3 }).borderRadius(6);
+                  Text(`${this.task.duration}min`)
+                    .fontSize(12).fontColor('#722ed1').backgroundColor('#f9f0ff')
+                    .padding({ left: 8, right: 8, top: 3, bottom: 3 }).borderRadius(6);
+                  Text(this.isStudyTask() ? '📝 学习笔记模式' : '💭 记录想法模式')
+                    .fontSize(11)
+                    .fontColor(this.isStudyTask() ? '#722ed1' : '#08979c')
+                    .backgroundColor(this.isStudyTask() ? '#f9f0ff' : '#e6fffb')
+                    .padding({ left: 8, right: 8, top: 3, bottom: 3 }).borderRadius(6);
+                }
+              }
+            }
+            .width('100%').padding(20).backgroundColor(Color.White)
+            .alignItems(HorizontalAlign.Start).margin({ top: 8, left: 8, right: 4 })
+            .borderRadius(12);
+
+            // 专注计时
+            Column({ space: 16 }) {
+              Text('专注计时').fontSize(13).fontColor('#8c8c8c').fontWeight(FontWeight.Medium);
+
+              Text(this.formatTime(this.seconds))
+                .fontSize(64).fontWeight(FontWeight.Bold)
+                .fontColor(this.running ? '#ff6b35' : '#1a1a1a')
+                .width('100%').textAlign(TextAlign.Center);
+
+              Row() {
+                Text('时长 (分钟)').fontSize(14).fontColor('#8c8c8c').layoutWeight(1);
+                Row({ space: 0 }) {
+                  Button('－').width(36).height(36).fontSize(18)
+                    .backgroundColor('#f5f5f5')
+                    .fontColor(this.running ? '#d9d9d9' : '#1a1a1a').borderRadius(18)
+                    .onClick(() => {
+                      if (!this.running && this.focusMinutes > 5) {
+                        this.focusMinutes--; this.seconds = this.focusMinutes * 60;
+                      }
+                    });
+                  Text(this.focusMinutes.toString())
+                    .width(48).fontSize(16).fontWeight(FontWeight.Medium).textAlign(TextAlign.Center);
+                  Button('＋').width(36).height(36).fontSize(18)
+                    .backgroundColor('#f5f5f5')
+                    .fontColor(this.running ? '#d9d9d9' : '#1a1a1a').borderRadius(18)
+                    .onClick(() => {
+                      if (!this.running && this.focusMinutes < 120) {
+                        this.focusMinutes++; this.seconds = this.focusMinutes * 60;
+                      }
+                    });
+                }
+              }
+
+              Row({ space: 8 }) {
+                ForEach([15, 25, 45, 60], (min: number) => {
+                  Button(`${min}min`)
+                    .height(32).fontSize(13)
+                    .backgroundColor(this.focusMinutes === min ? '#ff6b35' : '#f5f5f5')
+                    .fontColor(this.focusMinutes === min ? Color.White : '#595959')
+                    .borderRadius(16).padding({ left: 12, right: 12 })
+                    .onClick(() => {
+                      if (!this.running) { this.focusMinutes = min; this.seconds = min * 60; }
+                    });
+                })
+              }
+
+              Row({ space: 12 }) {
+                Button(this.running ? '⏸ 暂停' : '▶ 开始')
+                  .layoutWeight(1).height(48).fontSize(15)
+                  .backgroundColor(this.running ? '#faad14' : '#ff6b35')
+                  .fontColor(Color.White).borderRadius(24)
+                  .onClick(() => {
+                    if (this.running) { this.stopTimer(); this.running = false; }
+                    else { this.running = true; this.startTimer(); }
+                  });
+                Button('↺ 重置').width(80).height(48).fontSize(15)
+                  .backgroundColor('#f5f5f5').fontColor('#595959').borderRadius(24)
+                  .onClick(() => { this.resetTimer(); });
+              }
+
+              Button('🔒  锁机专注')
+                .width('100%').height(48).fontSize(15)
+                .backgroundColor('#1a1a2e').fontColor(Color.White).borderRadius(24)
+                .onClick(() => {
+                  this.stopTimer(); this.running = true;
+                  this.lockMode = true; this.startTimer();
+                });
+            }
+            .width('100%').padding(20).backgroundColor(Color.White)
+            .alignItems(HorizontalAlign.Start)
+            .margin({ top: 8, left: 8, right: 4, bottom: 8 })
+            .borderRadius(12);
+          }
+          .width('100%');
+        }
+        .layoutWeight(1).height('100%').scrollBar(BarState.Off)
+        .edgeEffect(EdgeEffect.Spring);
+
+        // 分割线
+        Divider().vertical(true).strokeWidth(1).color('#f0f0f0').height('100%');
+
+        // ── 右栏：笔记 + 资料 + 闹钟 ──────────────
+        Scroll() {
+          Column({ space: 0 }) {
+            // 笔记区（根据任务类型切换）
+            if (this.isStudyTask()) {
+              Column({ space: 14 }) {
+                // 学习笔记
+                Column({ space: 8 }) {
+                  Row() {
+                    Text('📝 学习笔记').fontSize(15).fontWeight(FontWeight.Medium).fontColor('#1a1a1a');
+                    Blank();
+                    Text('记录知识点、公式、题解').fontSize(11).fontColor('#8c8c8c');
+                  }
+                  TextArea({ text: this.studyNotes, placeholder: '记录知识点、公式、解题思路、易错点…' })
+                    .width('100%').height(200).backgroundColor('#f5f7fa')
+                    .borderRadius(8).fontSize(14).fontColor('#1a1a1a')
+                    .onChange((v: string) => { this.studyNotes = v; });
+                }.alignItems(HorizontalAlign.Start);
+
+                Divider().strokeWidth(0.5).color('#f0f0f0');
+
+                // 学习资料
+                Column({ space: 10 }) {
+                  Row() {
+                    Text('📎 学习资料').fontSize(15).fontWeight(FontWeight.Medium).fontColor('#1a1a1a');
+                    Blank();
+                    Button('+ 导入资料')
+                      .height(32).fontSize(13)
+                      .backgroundColor('#f9f0ff').fontColor('#722ed1')
+                      .borderRadius(16).padding({ left: 12, right: 12 })
+                      .onClick(() => { this.simulateImportFile(); });
+                  }
+                  if (this.attachedFiles.length === 0) {
+                    Row() {
+                      Text('暂无资料，点击右上角导入').fontSize(13).fontColor('#bfbfbf');
+                    }
+                    .width('100%').padding({ top: 16, bottom: 16 })
+                    .justifyContent(FlexAlign.Center)
+                    .backgroundColor('#fafafa').borderRadius(8);
+                  } else {
+                    Column({ space: 8 }) {
+                      ForEach(this.attachedFiles, (fileName: string, fileIdx: number) => {
+                        Row({ space: 10 }) {
+                          Text(this.getFileIcon(fileName)).fontSize(20);
+                          Column({ space: 2 }) {
+                            Text(fileName).fontSize(14).fontColor('#1a1a1a')
+                              .maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis });
+                            Text('已导入').fontSize(11).fontColor('#52c41a');
+                          }.layoutWeight(1).alignItems(HorizontalAlign.Start);
+                          Text('✕').fontSize(16).fontColor('#bfbfbf')
+                            .onClick(() => {
+                              const newFiles = this.attachedFiles.filter((f, i) => i !== fileIdx);
+                              this.attachedFiles = newFiles;
+                            });
+                        }
+                        .width('100%')
+                        .padding({ left: 12, right: 12, top: 10, bottom: 10 })
+                        .backgroundColor('#fafafa').borderRadius(8);
+                      }, (fileName: string) => fileName)
+                    }
+                  }
+                }.alignItems(HorizontalAlign.Start);
+              }
+              .width('100%').padding(20).backgroundColor(Color.White)
+              .alignItems(HorizontalAlign.Start)
+              .margin({ top: 8, left: 4, right: 8 }).borderRadius(12);
+            } else {
+              Column({ space: 10 }) {
+                Row() {
+                  Text('💭 记录想法').fontSize(15).fontWeight(FontWeight.Medium).fontColor('#1a1a1a');
+                  Blank();
+                  Text('记录你的日常感悟').fontSize(11).fontColor('#8c8c8c');
+                }
+                TextArea({ text: this.thoughtNotes, placeholder: '今天有什么想法、感受或者值得记录的事情…' })
+                  .width('100%').height(240).backgroundColor('#f5f7fa')
+                  .borderRadius(8).fontSize(14).fontColor('#1a1a1a')
+                  .onChange((v: string) => { this.thoughtNotes = v; });
+              }
+              .width('100%').padding(20).backgroundColor(Color.White)
+              .alignItems(HorizontalAlign.Start)
+              .margin({ top: 8, left: 4, right: 8 }).borderRadius(12);
+            }
+
+            // 闹钟提醒
+            Column({ space: 14 }) {
+              Text('闹钟提醒').fontSize(13).fontColor('#8c8c8c').fontWeight(FontWeight.Medium);
+              Row() {
+                Column({ space: 3 }) {
+                  Text(this.reminderEnabled ? '🔔 提醒已开启' : '🔕 提醒未开启')
+                    .fontSize(15).fontColor('#1a1a1a');
+                  Text(this.reminderEnabled ? `提醒时间：${this.reminderTime}` : '点击右侧开关设置提醒')
+                    .fontSize(12).fontColor('#8c8c8c');
+                }.layoutWeight(1).alignItems(HorizontalAlign.Start);
+                Toggle({ type: ToggleType.Switch, isOn: this.reminderEnabled })
+                  .selectedColor('#ff6b35')
+                  .onChange((v: boolean) => {
+                    if (v) { this.showReminderPicker = true; }
+                    else { this.disableReminder(); }
+                  });
+              }.width('100%');
+
+              if (this.showReminderPicker || this.reminderEnabled) {
+                Column({ space: 12 }) {
+                  Text('选择提醒时间').fontSize(13).fontColor('#8c8c8c');
+                  Row({ space: 12 }) {
+                    Column({ space: 6 }) {
+                      Text('时').fontSize(12).fontColor('#8c8c8c');
+                      Row({ space: 8 }) {
+                        Button('－').width(32).height(32).fontSize(16)
+                          .backgroundColor('#f5f5f5').fontColor('#1a1a1a').borderRadius(16)
+                          .onClick(() => { if (this.reminderHour > 0) this.reminderHour--; });
+                        Text(this.reminderHour.toString().padStart(2,'0'))
+                          .fontSize(20).fontWeight(FontWeight.Bold).width(40).textAlign(TextAlign.Center);
+                        Button('＋').width(32).height(32).fontSize(16)
+                          .backgroundColor('#f5f5f5').fontColor('#1a1a1a').borderRadius(16)
+                          .onClick(() => { if (this.reminderHour < 23) this.reminderHour++; });
+                      }
+                    }.alignItems(HorizontalAlign.Center);
+                    Text(':').fontSize(24).fontWeight(FontWeight.Bold).fontColor('#1a1a1a');
+                    Column({ space: 6 }) {
+                      Text('分').fontSize(12).fontColor('#8c8c8c');
+                      Row({ space: 8 }) {
+                        Button('－').width(32).height(32).fontSize(16)
+                          .backgroundColor('#f5f5f5').fontColor('#1a1a1a').borderRadius(16)
+                          .onClick(() => { if (this.reminderMinute >= 5) this.reminderMinute -= 5; });
+                        Text(this.reminderMinute.toString().padStart(2,'0'))
+                          .fontSize(20).fontWeight(FontWeight.Bold).width(40).textAlign(TextAlign.Center);
+                        Button('＋').width(32).height(32).fontSize(16)
+                          .backgroundColor('#f5f5f5').fontColor('#1a1a1a').borderRadius(16)
+                          .onClick(() => { if (this.reminderMinute <= 54) this.reminderMinute += 5; });
+                      }
+                    }.alignItems(HorizontalAlign.Center);
+                  }.width('100%').justifyContent(FlexAlign.Center);
+
+                  Row({ space: 8 }) {
+                    ForEach(['07:00','08:00','09:00','12:00','19:00','21:00'], (t: string) => {
+                      Text(t)
+                        .fontSize(12)
+                        .fontColor(this.reminderTime === t ? Color.White : '#595959')
+                        .backgroundColor(this.reminderTime === t ? '#ff6b35' : '#f5f5f5')
+                        .padding({ left: 10, right: 10, top: 6, bottom: 6 }).borderRadius(14)
+                        .onClick(() => {
+                          const hm = parseHourMinute(t);
+                          this.reminderHour = hm[0]; this.reminderMinute = hm[1]; this.reminderTime = t;
+                        });
+                    })
+                  }
+                  Button('确认设置提醒')
+                    .width('100%').height(44)
+                    .backgroundColor('#ff6b35').fontColor(Color.White).borderRadius(22)
+                    .onClick(() => { this.enableReminder(); });
+                }
+                .width('100%').padding(12).backgroundColor('#fafafa').borderRadius(10);
+              }
+            }
+            .width('100%').padding(20).backgroundColor(Color.White)
+            .alignItems(HorizontalAlign.Start)
+            .margin({ top: 8, left: 4, right: 8, bottom: 8 }).borderRadius(12);
+          }
+          .width('100%');
+        }
+        .layoutWeight(1).height('100%').scrollBar(BarState.Off)
+        .edgeEffect(EdgeEffect.Spring);
+      }
+      .layoutWeight(1).width('100%');
     }
     .width('100%').height('100%').backgroundColor('#f5f7fa');
   }

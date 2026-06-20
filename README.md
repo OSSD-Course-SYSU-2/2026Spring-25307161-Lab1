@@ -12,12 +12,11 @@
 
 ## 📖 项目简介
 
-**智学日程（SmartStudy Schedule）** 是一款面向大学生日常学习生活场景深度定制的鸿蒙原生 App。  
-项目在华为官方 Codelab 待办清单示例的基础上，进行了系统性的功能扩展与 UI 重设计，覆盖多分类待办管理、自定义任务新增与删除、专注计时锁机、学习笔记分类、闹钟振动提醒、积分打卡激励等核心场景，帮助大学生高效规划日常事务与学习任务。
+**智学日程（SmartStudy Schedule）** 是一款面向大学生日常学习生活场景深度定制的鸿蒙原生 App。项目在华为官方 Codelab 待办清单示例的基础上，进行了系统性的功能扩展与 UI 重设计，并完整实现了 HarmonyOS **"一次开发，多端部署"**、**"自由流转"** 与 **数据持久化** 三大核心能力。
 
 ---
 
-## 🖼 效果展示
+## 🖼 效果展示（手机端）
 
 <table>
   <tr>
@@ -52,102 +51,154 @@
 
 ---
 
-## ✨ 功能亮点
+## 📱 多端部署效果展示
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="screenshots/device/screenshots/tablet_home.png" width="280" alt="平板主页双列网格"/>
+      <br/><sub><b>平板 · 侧边栏 + 双列卡片网格</b></sub>
+    </td>
+    <td align="center">
+      <img src="screenshots/device/screenshots/tablet_detail.png" width="280" alt="平板详情页左右分栏"/>
+      <br/><sub><b>平板 · 详情页左右分栏布局</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="screenshots/device/screenshots/foldable_open.png" width="280" alt="折叠屏展开双栏"/>
+      <br/><sub><b>折叠屏展开 · 侧边栏 + 单列列表</b></sub>
+    </td>
+    <td align="center">
+      <img src="screenshots/device/screenshots/wearable_home.png" width="200" alt="手表极简界面"/>
+      <br/><sub><b>智能手表 · 极简任务列表</b></sub>
+    </td>
+    <td align="center">
+      <img src="screenshots/device/screenshots/wearable_timer.png" width="200" alt="手表计时器界面"/>
+      <br/><sub><b>智能手表 · 番茄钟计时</b></sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+## ✨ 核心功能
 
 ### 1. 多分类待办管理
 
-将任务划分为**日常 / 刷题 / 单词 / 复习**四大类，支持顶部 Tab 一键切换，每个分类均预置了符合大学生生活场景的典型任务（晨跑、高数习题、四六级词汇、专业课巩固等）。
-
-<table>
-  <tr>
-    <td align="center">
-      <img src="screenshots/device/screenshots/home.png" width="220" alt="主页任务列表"/>
-      <br/><sub>▲ 主页 · 全部任务列表，Tab 分类切换，进度条实时更新</sub>
-    </td>
-    <td align="center">
-      <img src="screenshots/device/screenshots/delete.png" width="220" alt="管理删除模式"/>
-      <br/><sub>▲ 管理模式 · 任意任务均可一键删除，附二次确认保护</sub>
-    </td>
-  </tr>
-</table>
-
----
+任务划分为**日常 / 刷题 / 单词 / 复习**四大类，支持顶部 Tab 切换，预置符合大学生场景的典型任务。
 
 ### 2. 自定义任务新增 · 灵活存在时间
 
-点击右下角 **+** 按钮从底部弹出新增面板，支持设置：
+点击 **+** 从底部弹出新增面板，存在时间三档可选：
 
-- 任务名称、分类、开始/结束时间、时长
-- **存在时间三档可选**：
-  - 📅 **仅今天** — 仅当日显示，次日自动消失
-  - 🔁 **永久固定** — 每天均显示，直到手动删除
-  - 📆 **自定义日期范围** — 指定开始与结束日期，精准控制任务周期
+| 模式 | 说明 |
+|------|------|
+| 📅 仅今天 | 当日显示，次日自动消失 |
+| 🔁 永久固定 | 每天显示，直到手动删除 |
+| 📆 自定义范围 | 指定开始和结束日期，适合备考计划 |
 
-<div align="center">
-  <img src="screenshots/device/screenshots/add.png" width="260" alt="新增任务弹窗"/>
-  <br/>
-  <sub>▲ 新增待办 · 分类、时间、时长、存在周期、闹钟提醒一站式配置</sub>
-</div>
+### 3. 笔记分类 · 智能切换
+
+| 任务类型 | 笔记模式 |
+|---------|---------|
+| 刷题 / 单词 / 复习 | 📝 学习笔记 + 📎 导入学习资料 |
+| 日常 | 💭 记录想法日记 |
+
+### 4. 专注计时 · 锁机沉浸模式
+
+快捷时长选择（15/25/45/60 分钟），**🔒 锁机专注**进入全屏深色界面，屏蔽干扰，专注完成自动标记。
+
+### 5. 闹钟振动提醒
+
+基于 `reminderAgentManager` 代理提醒，**App 退出后依然有效**，振动+通知双重提醒。
+
+### 6. 积分打卡激励
+
+完成日常任务 +5 分，学习类任务 +10 分，每日首次打卡 +20 分。
 
 ---
 
-### 3. 任务删除管理
+## 💾 数据持久化
 
-点击右上角**「管理」**按钮进入管理模式，顶部出现红色提示条，所有任务卡片左侧显示红色**「删除」**按钮，点击后弹出二次确认弹窗，防止误删。删除任务时关联的闹钟提醒也会同步取消。
+基于 HarmonyOS `@ohos.data.preferences` 实现本地持久化存储，**App 重启或重新部署后数据不丢失**。
 
----
-
-### 4. 笔记分类 · 学习 vs 日常智能切换
-
-根据任务类型自动切换笔记模式：
-
-| 任务类型 | 笔记模式 | 功能 |
+| 存储内容 | 存储 Key | 说明 |
 |---------|---------|------|
-| 刷题 / 单词 / 复习 | 📝 学习笔记模式 | 学习笔记文本框 + 📎 学习资料导入区 |
-| 日常 | 💭 记录想法模式 | 日记式想法记录文本框 |
+| 用户新增任务 | `user_tasks` | 完整任务对象（标题、分类、时间、存在周期等），JSON 数组存储 |
+| 任务完成状态 | `completed_ids` | 已完成任务的 ID 列表（含预设27个任务与用户新增任务） |
 
-<table>
-  <tr>
-    <td align="center">
-      <img src="screenshots/device/screenshots/daily_detail.png" width="220" alt="日常任务记录想法"/>
-      <br/><sub>▲ 日常任务 · 「记录想法」模式</sub>
-    </td>
-    <td align="center">
-      <img src="screenshots/device/screenshots/study_detail.png" width="220" alt="学习任务学习笔记"/>
-      <br/><sub>▲ 学习任务 · 「学习笔记+导入资料」模式</sub>
-    </td>
-  </tr>
-</table>
+### 持久化触发时机
+
+| 操作 | 行为 |
+|------|------|
+| 新增任务 | 立即写入 `user_tasks` |
+| 删除任务 | 重新写入 `user_tasks` 与 `completed_ids` |
+| 勾选/取消完成 | 实时更新 `completed_ids` |
+| App 启动 | `aboutToAppear()` 中异步读取并合并到内存任务列表 |
+
+预设的27个任务本身不重复存储（避免冗余），仅持久化其**完成状态**；用户新增任务（ID 由 `Date.now()` 生成，大于 `100000000`）完整持久化标题、时间、分类、存在周期等全部字段。
 
 ---
 
-### 5. 专注计时 · 锁机沉浸模式
+## 📱 一次开发，多端部署
 
-<div align="center">
-  <img src="screenshots/device/screenshots/focus.png" width="260" alt="锁机专注模式"/>
-  <br/>
-  <sub>▲ 锁机专注模式 · 深色全屏沉浸，进度可视化，支持专注中记录笔记</sub>
-</div>
+基于断点系统监听屏幕宽度（`display.getDefaultDisplaySync()` 计算 vp + `window.on('windowSizeChange')` 监听折叠/旋转），自动切换最适合当前设备的布局。
 
-支持快捷时长（15 / 25 / 45 / 60 分钟）、自定义时长，**🔒 锁机专注**进入全屏深色沉浸界面，屏蔽干扰，专注结束自动标记完成。
+| 断点 | 宽度 | 设备 | 布局策略 |
+|------|------|------|---------|
+| `xs` | < 280vp | ⌚ 智能手表 | 极简任务列表 + 简单计时 |
+| `sm` | 280~599vp | 📱 手机 / 折叠屏折叠态 | 单列列表 + Tab 分类栏 |
+| `md` | 600~839vp | 📱 折叠屏展开态 | 左侧分类侧边栏 + 右侧单列列表 |
+| `lg` | ≥ 840vp | 📟 平板 | 左侧侧边栏 + 右侧**双列卡片网格** |
+
+**详情页平板专属布局：** 左栏（任务信息 + 专注计时控制）/ 右栏（学习笔记 / 记录想法 + 学习资料 + 闹钟提醒）。
+
+**手表端界面：** 顶部日期和积分、进度条、仅显示未完成任务（任务名+分类标签+开始时间）、底部番茄钟（开始/暂停/重置）。
 
 ---
 
-### 6. 闹钟振动提醒
+## 🔄 自由流转（跨端迁移）
 
-基于 HarmonyOS `reminderAgentManager` 代理提醒，**App 退出后提醒依然有效**，支持振动 + 通知双重提醒，任务详情页可精确调整提醒时间。
+基于 HarmonyOS **分布式流转框架**，用户可一键将当前使用状态从手机迁移到平板（或其他设备），实现无缝接续。
 
----
+### 迁移的状态
 
-### 7. 学习积分 · 打卡激励
+| 状态 | 说明 |
+|------|------|
+| 当前 Tab 分类 | 恢复到相同的任务分类 |
+| 当前页面 | 若在详情页，自动跳转到对应任务 |
+| 专注计时进度 | 恢复剩余秒数，误差 ≤5 秒 |
+| 笔记内容 | 恢复正在编辑的笔记 |
 
-| 行为 | 积分奖励 |
-|------|---------|
-| 完成日常任务 | +5 分 |
-| 完成学习类任务（刷题/单词/复习） | +10 分 |
-| 每日首次打卡 | +20 分 |
+### 实现原理
 
-积分与打卡天数实时显示在顶部，基于 `AppStorage` 持久化存储，重启 App 后数据不丢失。
+```
+源端（手机）触发流转
+      ↓
+onContinue() 保存状态到 wantParam
+      ↓
+对端（平板）onCreate() / onNewWant() 恢复状态到 AppStorage
+      ↓
+ToDoListPage 恢复 Tab + 自动跳转详情页
+TaskDetailPage 恢复计时进度 + 笔记内容
+```
+
+### 配置要求
+
+`module.json5` 中需声明：
+```json
+"continuable": true,
+"requestPermissions": [
+  {
+    "name": "ohos.permission.DISTRIBUTED_DATASYNC",
+    "reason": "用于在多设备间同步任务数据，实现自由流转",
+    "usedScene": { "abilities": ["EntryAbility"], "when": "inuse" }
+  }
+]
+```
+
+> 自由流转需要两台设备（或模拟器）同时在线，通过系统流转入口触发，而非重新运行 App。
 
 ---
 
@@ -158,11 +209,13 @@
 | **开发语言** | ArkTS（HarmonyOS 声明式语法） |
 | **开发工具** | DevEco Studio 6.0+ |
 | **目标系统** | HarmonyOS 5.0+ |
-| **UI 范式** | 声明式 UI，`@Component` / `@Entry` / `@Builder` |
+| **UI 范式** | 声明式 UI — `@Component` / `@Entry` / `@Builder` |
 | **状态管理** | `@State` / `@StorageProp` / `AppStorage` |
+| **断点响应** | `@ohos.display` + `@ohos.window` + `@ohos.mediaquery` |
 | **页面路由** | `@ohos.router` |
-| **本地提醒** | `@ohos.reminderAgentManager`（代理提醒，后台有效） |
-| **数据持久化** | `AppStorage.SetOrCreate` |
+| **本地提醒** | `@ohos.reminderAgentManager`（后台有效） |
+| **数据持久化** | `@ohos.data.preferences` |
+| **自由流转** | `AbilityConstant.OnContinueResult` / `wantParam` |
 
 ---
 
@@ -170,12 +223,14 @@
 
 ```
 entry/src/main/ets/
+├── common/
+│   └── BreakpointSystem.ets   # 断点系统（xs/sm/md/lg 监听）
 ├── entryability/
-│   ├── EntryAbility.ets      # 应用入口，初始化 AppStorage
-│   └── Task.ets              # 任务数据模型（Task / TaskParams）
+│   ├── EntryAbility.ets       # 应用入口 + 自由流转 onContinue 实现
+│   └── Task.ets               # 任务数据模型 + JSON 序列化（持久化用）
 └── pages/
-    ├── ToDoListPage.ets      # 主页：多分类任务列表、新增、删除、积分
-    └── TaskDetailPage.ets    # 详情页：笔记、闹钟、专注计时、锁机模式
+    ├── ToDoListPage.ets       # 主页：多端布局 + 持久化 + 流转恢复
+    └── TaskDetailPage.ets     # 详情页：笔记/计时 + 流转恢复
 ```
 
 ---
@@ -183,16 +238,11 @@ entry/src/main/ets/
 ## 🚀 运行方式
 
 ```bash
-# 1. 安装 DevEco Studio 6.0+
-# 2. 克隆项目
 git clone https://github.com/OSSD-Course-SYSU-2/2026Spring-25307161-Lab1.git
-# 3. 用 DevEco Studio 打开，连接模拟器或真机（开启开发者模式 + USB 调试）
-# 4. Shift + F10 运行，首次启动允许权限申请
+# 用 DevEco Studio 6.0+ 打开，连接模拟器或真机，Shift+F10 运行
 ```
 
-> **所需权限**（首次启动时允许）：
-> - `ohos.permission.PUBLISH_AGENT_REMINDER`
-> - `ohos.permission.VIBRATE`
+> 首次运行需允许权限：`PUBLISH_AGENT_REMINDER`、`VIBRATE`、`DISTRIBUTED_DATASYNC`
 
 ---
 
@@ -201,15 +251,15 @@ git clone https://github.com/OSSD-Course-SYSU-2/2026Spring-25307161-Lab1.git
 | 功能点 | 原始 Codelab | 智学日程 |
 |--------|-------------|---------|
 | 任务分类 | 无 | 四分类 + Tab 切换 |
-| 任务新增 | 无 | 底部弹窗，完整配置项 |
-| 任务删除 | 无 | 管理模式，全部可删，二次确认 |
-| 任务存在周期 | 无 | 仅今天 / 永久 / 自定义范围 三档 |
-| 笔记功能 | 无 | 学习/日常分类笔记，自动切换 |
-| 学习资料 | 无 | 学习类任务支持导入资料 |
-| 专注计时 | 无 | 倒计时 + 锁机沉浸专注模式 |
-| 闹钟提醒 | 无 | 振动+通知，后台代理有效 |
-| 积分激励 | 无 | 完成得分，每日打卡奖励 |
-| UI 设计 | 基础列表 | 进度条、分类标签、动态 Tab、橙色主题 |
+| 任务新增/删除 | 无 | 完整配置 + 管理模式 |
+| 任务存在周期 | 无 | 仅今天/永久/自定义范围 |
+| 笔记功能 | 无 | 学习笔记+资料 / 记录想法 |
+| 专注计时 | 无 | 倒计时 + 锁机沉浸 |
+| 闹钟提醒 | 无 | 振动+通知，后台有效 |
+| 积分激励 | 无 | 完成得分 + 每日打卡 |
+| 数据持久化 | 无 | Preferences 本地存储，重启不丢失 |
+| 多端部署 | 无 | Phone/Foldable/Tablet/Wearable |
+| 自由流转 | 无 | 全状态迁移（计时+笔记） |
 
 ---
 
@@ -230,9 +280,9 @@ git clone https://github.com/OSSD-Course-SYSU-2/2026Spring-25307161-Lab1.git
 
 ---
 
-<br/>
-
-# English Version
+# ─────────────────────────────────────
+# English Version · 英文版
+# ─────────────────────────────────────
 
 # SmartStudy Schedule · 智学日程
 
@@ -248,17 +298,16 @@ git clone https://github.com/OSSD-Course-SYSU-2/2026Spring-25307161-Lab1.git
 
 ## 📖 Overview
 
-**SmartStudy Schedule** is a HarmonyOS-native App deeply customized for college students' daily academic life.  
-Starting from Huawei's official Codelab To-Do List template, the project delivers a complete redesign and feature expansion covering multi-category task management, flexible scheduling, focus timer with lock-screen mode, smart note system, alarm reminders, and a gamified points system.
+**SmartStudy Schedule** is a HarmonyOS-native App deeply customized for college students' daily academic life. It fully implements three HarmonyOS flagship capabilities: **"Develop Once, Deploy Everywhere"**, **"Free Continuation"** (cross-device state migration), and **local data persistence**.
 
 ---
 
-## 🖼 Screenshots
+## 🖼 Screenshots (Phone)
 
 <table>
   <tr>
     <td align="center">
-      <img src="screenshots/device/screenshots/home.png" width="220" alt="Task List Home"/>
+      <img src="screenshots/device/screenshots/home.png" width="220" alt="Home"/>
       <br/><sub><b>Home · Multi-category Task List</b></sub>
     </td>
     <td align="center">
@@ -266,21 +315,21 @@ Starting from Huawei's official Codelab To-Do List template, the project deliver
       <br/><sub><b>Manage Mode · Delete Any Task</b></sub>
     </td>
     <td align="center">
-      <img src="screenshots/device/screenshots/add.png" width="220" alt="Add Task Dialog"/>
+      <img src="screenshots/device/screenshots/add.png" width="220" alt="Add Task"/>
       <br/><sub><b>Add Task · Full Configuration</b></sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="screenshots/device/screenshots/daily_detail.png" width="220" alt="Daily Task Detail"/>
+      <img src="screenshots/device/screenshots/daily_detail.png" width="220" alt="Daily Detail"/>
       <br/><sub><b>Daily Task · Record Thoughts</b></sub>
     </td>
     <td align="center">
-      <img src="screenshots/device/screenshots/study_detail.png" width="220" alt="Study Task Detail"/>
+      <img src="screenshots/device/screenshots/study_detail.png" width="220" alt="Study Detail"/>
       <br/><sub><b>Study Task · Notes + Materials</b></sub>
     </td>
     <td align="center">
-      <img src="screenshots/device/screenshots/focus.png" width="220" alt="Focus Lock Mode"/>
+      <img src="screenshots/device/screenshots/focus.png" width="220" alt="Focus Mode"/>
       <br/><sub><b>Lock-Screen Focus Mode</b></sub>
     </td>
   </tr>
@@ -288,111 +337,93 @@ Starting from Huawei's official Codelab To-Do List template, the project deliver
 
 ---
 
+## 📱 Multi-Device Deployment Showcase
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="screenshots/device/screenshots/tablet_home.png" width="280" alt="Tablet Home Grid"/>
+      <br/><sub><b>Tablet · Sidebar + Two-Column Card Grid</b></sub>
+    </td>
+    <td align="center">
+      <img src="screenshots/device/screenshots/tablet_detail.png" width="280" alt="Tablet Detail Split"/>
+      <br/><sub><b>Tablet · Detail Page Split Layout</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="screenshots/device/screenshots/foldable_open.png" width="280" alt="Foldable Open"/>
+      <br/><sub><b>Foldable (Unfolded) · Sidebar + List</b></sub>
+    </td>
+    <td align="center">
+      <img src="screenshots/device/screenshots/wearable_home.png" width="200" alt="Wearable Minimal UI"/>
+      <br/><sub><b>Smartwatch · Minimal Task List</b></sub>
+    </td>
+    <td align="center">
+      <img src="screenshots/device/screenshots/wearable_timer.png" width="200" alt="Wearable Timer"/>
+      <br/><sub><b>Smartwatch · Pomodoro Timer</b></sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+## 💾 Data Persistence
+
+Implemented with HarmonyOS `@ohos.data.preferences` for local storage — **data survives App restarts and redeployments**.
+
+| Content | Storage Key | Detail |
+|---------|-------------|--------|
+| User-added tasks | `user_tasks` | Full task objects stored as JSON array |
+| Completion status | `completed_ids` | List of completed task IDs (presets + user tasks) |
+
+Persistence is triggered on: task creation, deletion, and completion toggle. Data is loaded asynchronously in `aboutToAppear()` and merged with the in-memory preset task list at startup.
+
+---
+
+## 📱 Develop Once, Deploy Everywhere
+
+A breakpoint system (`display.getDefaultDisplaySync()` + `window.on('windowSizeChange')`) monitors real screen width and automatically switches layouts.
+
+| Breakpoint | Width | Device | Layout |
+|------------|-------|--------|--------|
+| `xs` | < 280vp | ⌚ Wearable | Minimal task list + simple timer |
+| `sm` | 280~599vp | 📱 Phone / Folded | Single column + Tab bar |
+| `md` | 600~839vp | 📱 Foldable (unfolded) | Side category bar + task list |
+| `lg` | ≥ 840vp | 📟 Tablet | Side bar + **two-column card grid** |
+
+**Tablet detail page**: left column (task info + focus timer) / right column (notes + materials + alarm).
+
+---
+
+## 🔄 Free Continuation (Cross-Device Migration)
+
+Users can seamlessly transfer the current session from phone to tablet with one tap, migrating Tab category, current page, focus timer progress (±5s accuracy), and note content.
+
+```
+Source device (phone) triggers continuation
+      ↓
+onContinue() packs state into wantParam
+      ↓
+Target device (tablet) onCreate() / onNewWant() restores to AppStorage
+      ↓
+ToDoListPage restores Tab + auto-navigates to detail
+TaskDetailPage restores timer seconds + note content
+```
+
+> Free Continuation requires both devices online simultaneously, triggered via the system's continuation entry point — not by relaunching the App.
+
+---
+
 ## ✨ Key Features
 
-### 1. Multi-Category Task Management
-
-Tasks are organized into four categories: **Daily / Practice / Vocabulary / Review**, switchable via a top Tab bar. Each category comes pre-loaded with student-oriented tasks (morning run, math exercises, CET-6 vocabulary, course review, etc.).
-
-<table>
-  <tr>
-    <td align="center">
-      <img src="screenshots/device/screenshots/home.png" width="220" alt="Home"/>
-      <br/><sub>▲ Home page with Tab switching and real-time progress bar</sub>
-    </td>
-    <td align="center">
-      <img src="screenshots/device/screenshots/delete.png" width="220" alt="Delete Mode"/>
-      <br/><sub>▲ Manage mode — delete any task with confirmation dialog</sub>
-    </td>
-  </tr>
-</table>
-
----
-
-### 2. Custom Task Creation · Flexible Scheduling
-
-Tap the **+** button to open the bottom sheet panel. Configure:
-
-- Task name, category, start/end time, duration
-- **Task Visibility — 3 modes:**
-  - 📅 **Today Only** — disappears automatically the next day
-  - 🔁 **Permanent** — shown every day until manually deleted
-  - 📆 **Custom Date Range** — specify start and end dates, ideal for exam prep or short-term plans
-
-<div align="center">
-  <img src="screenshots/device/screenshots/add.png" width="260" alt="Add Task"/>
-  <br/>
-  <sub>▲ Add Task panel — category, time, duration, schedule mode & alarm in one place</sub>
-</div>
-
----
-
-### 3. Task Deletion Management
-
-Enter **Manage Mode** via the top-right button. A red banner appears and all task cards show a red **Delete** button. A confirmation dialog prevents accidental deletion. Associated reminders are cancelled automatically upon deletion.
-
----
-
-### 4. Smart Notes · Adapts to Task Type
-
-The note interface automatically switches based on task category:
-
-| Task Type | Note Mode | Features |
-|-----------|-----------|---------|
-| Practice / Vocabulary / Review | 📝 Study Note Mode | Study notes + 📎 Learning materials import |
-| Daily | 💭 Thought Journal Mode | Diary-style free writing |
-
-<table>
-  <tr>
-    <td align="center">
-      <img src="screenshots/device/screenshots/daily_detail.png" width="220" alt="Daily Detail"/>
-      <br/><sub>▲ Daily task — "Record Thoughts" journal mode</sub>
-    </td>
-    <td align="center">
-      <img src="screenshots/device/screenshots/study_detail.png" width="220" alt="Study Detail"/>
-      <br/><sub>▲ Study task — notes + learning materials import</sub>
-    </td>
-  </tr>
-</table>
-
----
-
-### 5. Focus Timer · Immersive Lock-Screen Mode
-
-<div align="center">
-  <img src="screenshots/device/screenshots/focus.png" width="260" alt="Focus Mode"/>
-  <br/>
-  <sub>▲ Lock-screen focus mode — full-screen dark UI, progress bar, in-session note taking</sub>
-</div>
-
-- Quick-select durations: 15 / 25 / 45 / 60 min
-- Custom duration with ＋/－ controls
-- **🔒 Lock-Screen Focus** — blocks distractions with a full-screen dark interface
-- Supports in-session note taking without exiting focus mode
-
----
-
-### 6. Alarm Reminders · Vibration + Notification
-
-Powered by HarmonyOS `reminderAgentManager` (agent-based reminders):
-
-- **Remains effective even after the App is closed**
-- Vibration + notification dual alert
-- Configurable reminder time per task (minute-level precision)
-- Quick preset times available (07:00, 08:00, 09:00, etc.)
-- Alarm is automatically cancelled when the task is deleted
-
----
-
-### 7. Points & Check-in System
-
-| Action | Points Awarded |
-|--------|---------------|
-| Complete a daily task | +5 pts |
-| Complete a study task | +10 pts |
-| First check-in of the day | +20 pts |
-
-Points and check-in streak are displayed in real time. Data is persisted via `AppStorage`.
+- **Multi-category tasks** — Daily / Practice / Vocabulary / Review with Tab switching
+- **Flexible scheduling** — Today only / Permanent / Custom date range
+- **Smart notes** — Study notes + materials import for study tasks; thought journal for daily tasks
+- **Focus timer** — Countdown + immersive lock-screen mode
+- **Alarm reminders** — Vibration + notification via `reminderAgentManager`, background-safe
+- **Points system** — Task completion rewards + daily check-in
+- **Data persistence** — Local storage via `@ohos.data.preferences`
 
 ---
 
@@ -400,14 +431,13 @@ Points and check-in streak are displayed in real time. Data is persisted via `Ap
 
 | Technology | Details |
 |------------|---------|
-| **Language** | ArkTS (HarmonyOS Declarative Syntax) |
+| **Language** | ArkTS (HarmonyOS Declarative) |
 | **IDE** | DevEco Studio 6.0+ |
 | **Target OS** | HarmonyOS 5.0+ |
-| **UI Paradigm** | Declarative UI — `@Component` / `@Entry` / `@Builder` |
-| **State Management** | `@State` / `@StorageProp` / `AppStorage` |
-| **Navigation** | `@ohos.router` |
+| **Responsive Layout** | `@ohos.display` + `@ohos.window` + `@ohos.mediaquery` |
 | **Reminders** | `@ohos.reminderAgentManager` (background-safe) |
-| **Persistence** | `AppStorage.SetOrCreate` |
+| **Persistence** | `@ohos.data.preferences` |
+| **Free Continuation** | `AbilityConstant.OnContinueResult` / `wantParam` |
 
 ---
 
@@ -415,12 +445,14 @@ Points and check-in streak are displayed in real time. Data is persisted via `Ap
 
 ```
 entry/src/main/ets/
+├── common/
+│   └── BreakpointSystem.ets   # Breakpoint listener (xs/sm/md/lg)
 ├── entryability/
-│   ├── EntryAbility.ets      # App entry point, AppStorage initialization
-│   └── Task.ets              # Task data model (Task / TaskParams)
+│   ├── EntryAbility.ets       # App entry + onContinue for free continuation
+│   └── Task.ets               # Task data model + JSON serialization
 └── pages/
-    ├── ToDoListPage.ets      # Home: categories, add/delete, points, progress
-    └── TaskDetailPage.ets    # Detail: notes, alarm, focus timer, lock-screen
+    ├── ToDoListPage.ets       # Home: multi-device layout + persistence + continuation
+    └── TaskDetailPage.ets     # Detail: notes/timer + continuation restore
 ```
 
 ---
@@ -428,33 +460,24 @@ entry/src/main/ets/
 ## 🚀 Getting Started
 
 ```bash
-# 1. Install DevEco Studio 6.0+
-# 2. Clone the repository
 git clone https://github.com/OSSD-Course-SYSU-2/2026Spring-25307161-Lab1.git
-# 3. Open in DevEco Studio, connect emulator or physical device
-# 4. Press Shift + F10 to run, allow permissions on first launch
+# Open in DevEco Studio 6.0+, connect device, press Shift+F10
+# Allow PUBLISH_AGENT_REMINDER / VIBRATE / DISTRIBUTED_DATASYNC on first launch
 ```
-
-> **Required Permissions:**
-> - `ohos.permission.PUBLISH_AGENT_REMINDER`
-> - `ohos.permission.VIBRATE`
 
 ---
 
 ## 🔄 Improvements over Original Codelab
 
-| Feature | Original Codelab | SmartStudy Schedule |
-|---------|-----------------|---------------------|
-| Task categories | None | 4 categories + Tab switching |
-| Add custom tasks | None | Bottom sheet with full config |
-| Delete tasks | None | Manage mode, all tasks deletable |
-| Task schedule modes | None | Today / Permanent / Custom range |
-| Notes | None | Study notes + Daily journal (auto-switch) |
-| Learning materials | None | File import per study task |
-| Focus timer | None | Countdown + lock-screen immersive mode |
-| Alarm reminders | None | Vibration + notification, background-safe |
-| Points system | None | Task completion rewards + daily check-in |
-| UI Design | Basic list | Progress bar, color tags, animated Tab, orange theme |
+| Feature | Original | SmartStudy Schedule |
+|---------|----------|---------------------|
+| Task management | Basic list | Full CRUD + categories |
+| Notes | None | Smart type-adaptive notes |
+| Focus timer | None | Countdown + lock-screen |
+| Alarm | None | Background-safe vibration+notification |
+| Data persistence | None | Local storage, survives restarts |
+| Multi-device | Phone only | Phone / Foldable / Tablet / Wearable |
+| Free Continuation | None | Full state migration (timer + notes) |
 
 ---
 

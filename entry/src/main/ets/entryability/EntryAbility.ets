@@ -1,133 +1,135 @@
-/*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
- * Licensed under the Apache License,Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-import { BusinessError } from '@kit.BasicServicesKit';
+import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { UIAbility } from '@kit.AbilityKit';
 import { window } from '@kit.ArkUI';
-import { preferences } from '@kit.ArkData';
+import { BreakpointSystem } from '../common/BreakpointSystem';
 
-const PREF_NAME = 'smartStudyStore';
+const TAG = 'EntryAbility';
+const DOMAIN = 0x0000;
+
+// 流转状态 key 常量
+export const CONTINUE_TAB_INDEX = 'continueTabIndex';
+export const CONTINUE_TASK_ID  = 'continueTaskId';
+export const CONTINUE_SECONDS  = 'continueSeconds';
+export const CONTINUE_NOTES    = 'continueNotes';
+export const CONTINUE_PAGE     = 'continuePage'; // 'list' | 'detail'
 
 export default class EntryAbility extends UIAbility {
+  private breakpointSystem: BreakpointSystem = new BreakpointSystem();
 
-  onWindowStageCreate(windowStage: window.WindowStage): void {
-    hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
+  onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    hilog.info(DOMAIN, TAG, 'onCreate');
 
-    // ✅ 从 Preferences 读取持久化数据，写入 AppStorage 供页面使用
-    this.initAppStorage();
+    // 接续启动：从 want 里读出源端保存的状态，写入 AppStorage 供页面读取
+    if (launchParam.launchReason === AbilityConstant.LaunchReason.CONTINUATION) {
+      try {
+        const params = want.parameters;
+        if (params) {
+          const tabIndex = params[CONTINUE_TAB_INDEX];
+          const taskId   = params[CONTINUE_TASK_ID];
+          const seconds  = params[CONTINUE_SECONDS];
+          const notes    = params[CONTINUE_NOTES];
+          const page     = params[CONTINUE_PAGE];
 
-    windowStage.loadContent('pages/ToDoListPage', (err: BusinessError, data) => {
-      if (err.code) {
-        hilog.error(0x0000, 'testTag', 'Failed to load the content. Cause: %{public}s', JSON.stringify(err) ?? '');
-        return;
-      }
-      this.immersionFuc(windowStage);
-      hilog.info(0x0000, 'testTag', 'Succeeded in loading the content. Data: %{public}s', JSON.stringify(data) ?? '');
-    });
-  }
-
-  /**
-   * 初始化 AppStorage：从 Preferences 读取积分/打卡数据
-   */
-  private initAppStorage(): void {
-    try {
-      preferences.getPreferences(this.context, PREF_NAME, (err, pref) => {
-        if (err) {
-          hilog.error(0x0000, 'testTag', 'getPreferences failed: %{public}s', JSON.stringify(err));
-          // 读取失败时使用默认值，保证页面正常运行
-          AppStorage.setOrCreate<number>('studyPoints', 0);
-          AppStorage.setOrCreate<number>('checkInDays', 0);
-          AppStorage.setOrCreate<number>('lastCheckDate', 0);
-          return;
+          if (tabIndex !== undefined) {
+            AppStorage.SetOrCreate(CONTINUE_TAB_INDEX, tabIndex as number);
+          }
+          if (taskId !== undefined) {
+            AppStorage.SetOrCreate(CONTINUE_TASK_ID, taskId as number);
+          }
+          if (seconds !== undefined) {
+            AppStorage.SetOrCreate(CONTINUE_SECONDS, seconds as number);
+          }
+          if (notes !== undefined) {
+            AppStorage.SetOrCreate(CONTINUE_NOTES, notes as string);
+          }
+          if (page !== undefined) {
+            AppStorage.SetOrCreate(CONTINUE_PAGE, page as string);
+          }
         }
-
-        const points = pref.getSync('studyPoints', 0) as number;
-        const days = pref.getSync('checkInDays', 0) as number;
-        const lastDate = pref.getSync('lastCheckDate', 0) as number;
-
-        AppStorage.setOrCreate<number>('studyPoints', points);
-        AppStorage.setOrCreate<number>('checkInDays', days);
-        AppStorage.setOrCreate<number>('lastCheckDate', lastDate);
-
-        hilog.info(0x0000, 'testTag', 'AppStorage init: points=%{public}d, days=%{public}d', points, days);
-      });
-    } catch (e) {
-      hilog.error(0x0000, 'testTag', 'initAppStorage error: %{public}s', JSON.stringify(e));
-      AppStorage.setOrCreate<number>('studyPoints', 0);
-      AppStorage.setOrCreate<number>('checkInDays', 0);
-      AppStorage.setOrCreate<number>('lastCheckDate', 0);
+      } catch (e) {
+        hilog.error(DOMAIN, TAG, 'onCreate continuation restore error: %{public}s', JSON.stringify(e));
+      }
     }
   }
 
-  /**
-   * 应用退出前将 AppStorage 数据持久化写回 Preferences
-   */
-  onBackground(): void {
-    this.saveAppStorage();
+  // ── 流转核心：源端设备触发，保存当前状态到 wantParam ──
+  onContinue(wantParam: Record<string, Object>): AbilityConstant.OnContinueResult {
+    hilog.info(DOMAIN, TAG, 'onContinue called');
+    try {
+      // 读取 AppStorage 中页面实时保存的流转数据
+      const tabIndex = AppStorage.Get<number>(CONTINUE_TAB_INDEX);
+      const taskId   = AppStorage.Get<number>(CONTINUE_TASK_ID);
+      const seconds  = AppStorage.Get<number>(CONTINUE_SECONDS);
+      const notes    = AppStorage.Get<string>(CONTINUE_NOTES);
+      const page     = AppStorage.Get<string>(CONTINUE_PAGE);
+
+      if (tabIndex !== undefined) wantParam[CONTINUE_TAB_INDEX] = tabIndex;
+      if (taskId   !== undefined) wantParam[CONTINUE_TASK_ID]   = taskId;
+      if (seconds  !== undefined) wantParam[CONTINUE_SECONDS]   = seconds;
+      if (notes    !== undefined) wantParam[CONTINUE_NOTES]     = notes;
+      if (page     !== undefined) wantParam[CONTINUE_PAGE]      = page;
+
+      hilog.info(DOMAIN, TAG, 'onContinue saved: tab=%{public}s page=%{public}s',
+        String(tabIndex), String(page));
+    } catch (e) {
+      hilog.error(DOMAIN, TAG, 'onContinue error: %{public}s', JSON.stringify(e));
+      return AbilityConstant.OnContinueResult.REJECT;
+    }
+    return AbilityConstant.OnContinueResult.AGREE;
+  }
+
+  // ── 对端设备热启动时（App 已在后台）恢复状态 ──────────
+  onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    hilog.info(DOMAIN, TAG, 'onNewWant');
+    if (launchParam.launchReason === AbilityConstant.LaunchReason.CONTINUATION) {
+      try {
+        const params = want.parameters;
+        if (params) {
+          const tabIndex = params[CONTINUE_TAB_INDEX];
+          const taskId   = params[CONTINUE_TASK_ID];
+          const seconds  = params[CONTINUE_SECONDS];
+          const notes    = params[CONTINUE_NOTES];
+          const page     = params[CONTINUE_PAGE];
+
+          if (tabIndex !== undefined) AppStorage.SetOrCreate(CONTINUE_TAB_INDEX, tabIndex as number);
+          if (taskId   !== undefined) AppStorage.SetOrCreate(CONTINUE_TASK_ID,   taskId as number);
+          if (seconds  !== undefined) AppStorage.SetOrCreate(CONTINUE_SECONDS,   seconds as number);
+          if (notes    !== undefined) AppStorage.SetOrCreate(CONTINUE_NOTES,     notes as string);
+          if (page     !== undefined) AppStorage.SetOrCreate(CONTINUE_PAGE,      page as string);
+        }
+      } catch (e) {
+        hilog.error(DOMAIN, TAG, 'onNewWant error: %{public}s', JSON.stringify(e));
+      }
+    }
   }
 
   onDestroy(): void {
-    this.saveAppStorage();
+    hilog.info(DOMAIN, TAG, 'onDestroy');
+    this.breakpointSystem.unregister();
   }
 
-  private saveAppStorage(): void {
-    try {
-      preferences.getPreferences(this.context, PREF_NAME, (err, pref) => {
-        if (err) {
-          hilog.error(0x0000, 'testTag', 'saveAppStorage getPreferences failed: %{public}s', JSON.stringify(err));
-          return;
-        }
-        const points = AppStorage.get<number>('studyPoints') ?? 0;
-        const days = AppStorage.get<number>('checkInDays') ?? 0;
-        const lastDate = AppStorage.get<number>('lastCheckDate') ?? 0;
+  onWindowStageCreate(windowStage: window.WindowStage): void {
+    hilog.info(DOMAIN, TAG, 'onWindowStageCreate');
+    this.breakpointSystem.register();
 
-        pref.putSync('studyPoints', points);
-        pref.putSync('checkInDays', days);
-        pref.putSync('lastCheckDate', lastDate);
-        pref.flush((flushErr) => {
-          if (flushErr) {
-            hilog.error(0x0000, 'testTag', 'pref flush failed: %{public}s', JSON.stringify(flushErr));
-          }
-        });
-      });
-    } catch (e) {
-      hilog.error(0x0000, 'testTag', 'saveAppStorage error: %{public}s', JSON.stringify(e));
-    }
+    windowStage.loadContent('pages/ToDoListPage', (err) => {
+      if (err.code) {
+        hilog.error(DOMAIN, TAG, 'loadContent failed: %{public}s', JSON.stringify(err));
+        return;
+      }
+      hilog.info(DOMAIN, TAG, 'loadContent success');
+    });
   }
 
-  /**
-   * 沉浸式适配
-   */
-  immersionFuc(windowStage: window.WindowStage): void {
-    try {
-      let windowClass: window.Window = windowStage.getMainWindowSync();
-      windowClass.setWindowLayoutFullScreen(true).catch((err: BusinessError) => {
-        hilog.error(0x0000, 'testTag', '%{public}s',
-          `SetWindowLayoutFullScreen failed. Cause code: ${err.code}, message: ${err.message}`);
-      });
-      let navigationBarArea: window.AvoidArea =
-        windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR);
-      let area: window.AvoidArea = windowClass.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM);
-      AppStorage.setOrCreate<number>('naviIndicatorHeight',
-        windowClass.getUIContext().px2vp(navigationBarArea.bottomRect.height));
-      AppStorage.setOrCreate<number>('statusBarHeight', windowClass.getUIContext().px2vp(area.topRect.height));
-      AppStorage.setOrCreate<window.Window>('windowClass', windowClass);
-    } catch (err) {
-      hilog.error(0x0000, 'testTag', '%{public}s',
-        `immersionFuc failed, error code=${err.code}, message=${err.message}`);
-    }
+  onWindowStageDestroy(): void {
+    hilog.info(DOMAIN, TAG, 'onWindowStageDestroy');
+  }
+
+  onForeground(): void {
+    hilog.info(DOMAIN, TAG, 'onForeground');
+  }
+
+  onBackground(): void {
+    hilog.info(DOMAIN, TAG, 'onBackground');
   }
 }
